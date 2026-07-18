@@ -1,0 +1,45 @@
+{
+  "name": "data_pipeline",
+  "dag": {
+    "nodes": [
+      {
+        "id": "fetch_data",
+        "handler": "call_external_service",
+        "dependencies": [],
+        "config": {
+          "url": "https://api.example.com/data"
+        }
+      },
+      {
+        "id": "transform_data",
+        "handler": "transform",
+        "dependencies": ["fetch_data"],
+        "config": {
+          "input": "{{ fetch_data.data }}"
+        }
+      },
+      {
+        "id": "validate_data",
+        "handler": "validate",
+        "dependencies": ["fetch_data"],
+        "config": {
+          "data": "{{ fetch_data.data }}"
+        }
+      },
+      {
+        "id": "merge_results",
+        "handler": "llm_service",
+        "dependencies": ["transform_data", "validate_data"],
+        "config": {
+          "prompt": "Merge transform result and validation result"
+        }
+      },
+      {
+        "id": "finalize",
+        "handler": "output",
+        "dependencies": ["merge_results"],
+        "config": {}
+      }
+    ]
+  }
+}
