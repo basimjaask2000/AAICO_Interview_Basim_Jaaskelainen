@@ -9,7 +9,7 @@ import uvicorn
 sys.path.insert(0, '/app/shared')
 from models import WorkflowDef, WorkflowState, TriggerRequest
 from validation import DAGValidator
-from storage import Storage
+from storage_postgres import PostgresStorage
 from kafka_utils import create_producer
 
 logger = logging.getLogger(__name__)
@@ -17,7 +17,7 @@ logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 
 app = FastAPI()
 producer = create_producer()
-store = Storage(os.getenv("REDIS_URL", "redis://localhost:6379"))
+store = PostgresStorage(os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/workflow_db"))
 
 
 @app.on_event("startup")

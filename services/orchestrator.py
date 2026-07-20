@@ -10,7 +10,7 @@ import redis
 sys.path.insert(0, '/app/shared')
 from models import WorkflowDef, WorkflowState, NodeState, Node
 from validation import DAGValidator
-from storage import Storage
+from storage_postgres import PostgresStorage
 from templates import resolve_templates
 from kafka_utils import create_consumer, create_producer
 
@@ -27,7 +27,7 @@ RETRY_KEY = "retry_queue"
 
 consumer = create_consumer(["workflow-events", "task-results"], "orchestrator-group")
 producer = create_producer()
-store = Storage(os.getenv("REDIS_URL", "redis://localhost:6379"))
+store = PostgresStorage(os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/workflow_db"))
 r = redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"), decode_responses=True)
 
 
