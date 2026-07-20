@@ -10,9 +10,15 @@ Workflows have tasks with dependencies: B needs A's output, C and D can run in p
 
 Events go to Kafka, not a polling queue. This avoids constant orchestrator checks and keeps events durable on disk. If the orchestrator crashes, everything is recoverable from Kafka.
 
-### Redis for workflow state
+### PostgreSQL for persistent workflow state
 
-Separate state (Redis) from event log (Kafka) because they have different access patterns. State gets constantly pinged by API queries and node updates; events are write-once, consumed once. Redis is faster for state queries, and we don't need to replay events to reconstruct state, just read the hashes.
+Workflow and node state are persisted to PostgreSQL (execution_id, name, state, timestamps, outputs, errors). This provides durable storage across restarts without data loss. Redis is still used for transient orchestrator state (active workflows, retry queues) that can be safely reconstructed from the database and Kafka event log.
+
+PostgreSQL schema:
+- `workflows`: execution metadata and workflow state
+- `nodes`: per-node execution status, outputs, and timestamps  
+- `workflow_definitions`: DAG definitions stored as JSONB
+
 
 ### Separate API, Orchestrator, Worker services
 
@@ -60,7 +66,7 @@ Workers can see the same task twice (Kafka redelivery, or a retry racing a slow 
 
 ## Trade-offs
 
-- Redis state has a 24h TTL, so workflows expire after a day. Fine for a demo, production would persist to Postgres.
 - At-least-once delivery instead of exactly-once. Idempotent workers make duplicates harmless and it's way simpler than Kafka transactions.
 - Full state recompute per event instead of an incremental in-memory scheduler. Slower on paper, but crash recovery comes for free.
 - Kafka topics are auto-created, which is fine for docker-compose. Production would provision them with explicit partitions/replication.
+- PostgreSQL uses dummy local credentials (postgres:postgres) suitable for development. Production would use proper credential management and connection pooling.
